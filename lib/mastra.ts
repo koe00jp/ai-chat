@@ -22,6 +22,15 @@ export const chatAgent = new Agent({
   model: buildModel(),
 });
 
+export function buildAgent(instructions: string) {
+  return new Agent({
+    id: "custom-agent",
+    name: "Custom Agent",
+    instructions,
+    model: buildModel(),
+  });
+}
+
 export const mastra = new Mastra({
   agents: { chatAgent },
 });

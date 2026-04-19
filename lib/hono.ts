@@ -1,18 +1,25 @@
 import { Hono } from "hono";
 import { stream } from "hono/streaming";
 import { prisma } from "./prisma";
-import { chatAgent } from "./mastra";
+import { chatAgent, buildAgent } from "./mastra";
+
+const MAX_CHARS = 2000;
 
 const app = new Hono().basePath("/api");
 
 app.post("/chat", async (c) => {
-  const { message, sessionId } = await c.req.json<{
+  const { message, sessionId, instructions } = await c.req.json<{
     message: string;
     sessionId: string;
+    instructions?: string;
   }>();
 
   if (!message || !sessionId) {
     return c.json({ error: "message and sessionId are required" }, 400);
+  }
+
+  if (message.length > MAX_CHARS) {
+    return c.json({ error: "message too long" }, 400);
   }
 
   let conversation = await prisma.conversation.findFirst({
@@ -36,7 +43,8 @@ app.post("/chat", async (c) => {
     content: m.content,
   }));
 
-  const agentStream = await chatAgent.stream([
+  const agent = instructions ? buildAgent(instructions) : chatAgent;
+  const agentStream = await agent.stream([
     ...history,
     { role: "user", content: message },
   ]);
