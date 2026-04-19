@@ -138,7 +138,8 @@ export default function ChatPage() {
       .then((r) => r.json())
       .then((data) => { if (data.messages?.length) setMessages(data.messages); })
       .catch(() => {});
-  }, []);
+    fetchConversations();
+  }, [fetchConversations]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -181,6 +182,7 @@ export default function ChatPage() {
     setMessages([]);
     setLastFailedMessage(null);
     setSidebarOpen(false);
+    fetchConversations();
     showToast("新しい会話を開始しました");
   };
 
@@ -225,6 +227,7 @@ export default function ChatPage() {
       });
     }
     setLoading(false);
+    fetchConversations();
   };
 
   const openSidebar = () => { setSidebarOpen(true); fetchConversations(); };
