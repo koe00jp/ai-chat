@@ -87,4 +87,32 @@ app.get("/conversations/:sessionId", async (c) => {
   });
 });
 
+app.get("/conversations", async (c) => {
+  const conversations = await prisma.conversation.findMany({
+    orderBy: { updatedAt: "desc" },
+    include: { messages: { orderBy: { createdAt: "asc" }, take: 1 } },
+    take: 50,
+  });
+
+  return c.json({
+    conversations: conversations.map((conv) => ({
+      sessionId: conv.sessionId,
+      preview: conv.messages[0]?.content.slice(0, 60) ?? "（メッセージなし）",
+      updatedAt: conv.updatedAt,
+    })),
+  });
+});
+
+app.delete("/conversations/:sessionId", async (c) => {
+  const { sessionId } = c.req.param();
+
+  const conversation = await prisma.conversation.findFirst({ where: { sessionId } });
+  if (!conversation) return c.json({ error: "not found" }, 404);
+
+  await prisma.message.deleteMany({ where: { conversationId: conversation.id } });
+  await prisma.conversation.delete({ where: { id: conversation.id } });
+
+  return c.json({ ok: true });
+});
+
 export default app;
