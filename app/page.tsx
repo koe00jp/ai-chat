@@ -120,6 +120,7 @@ export default function ChatPage() {
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -253,24 +254,40 @@ export default function ChatPage() {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-40 w-72 bg-gray-900 text-white flex flex-col shrink-0 transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
-        <div className="px-4 py-4 border-b border-gray-700 flex items-center justify-between">
-          <span className="font-semibold text-sm">会話履歴</span>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-gray-400 hover:text-white">
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-          </button>
+      <aside className={`fixed lg:static inset-y-0 left-0 z-40 bg-gray-900 text-white flex flex-col shrink-0 transition-all duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"} ${sidebarCollapsed ? "lg:w-14" : "w-72"}`}>
+        <div className="px-3 py-4 border-b border-gray-700 flex items-center justify-between min-h-[57px]">
+          {!sidebarCollapsed && <span className="font-semibold text-sm">会話履歴</span>}
+          <div className="flex items-center gap-1 ml-auto">
+            {/* デスクトップ折りたたみボタン */}
+            <button
+              onClick={() => setSidebarCollapsed((v) => !v)}
+              className="hidden lg:flex text-gray-400 hover:text-white p-1 rounded"
+              title={sidebarCollapsed ? "サイドバーを開く" : "サイドバーを閉じる"}
+            >
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                {sidebarCollapsed
+                  ? <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                  : <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>}
+              </svg>
+            </button>
+            {/* モバイル閉じるボタン */}
+            <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-gray-400 hover:text-white p-1 rounded">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+          </div>
         </div>
 
         <button
           onClick={newChat}
-          className="mx-3 mt-3 flex items-center gap-2 text-sm bg-indigo-600 hover:bg-indigo-500 rounded-lg px-3 py-2.5 transition-colors"
+          className={`mx-2 mt-3 flex items-center gap-2 text-sm bg-indigo-600 hover:bg-indigo-500 rounded-lg px-3 py-2.5 transition-colors ${sidebarCollapsed ? "justify-center" : ""}`}
+          title="新しい会話"
         >
-          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-          新しい会話
+          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current shrink-0"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          {!sidebarCollapsed && "新しい会話"}
         </button>
 
         <div className="flex-1 overflow-y-auto py-3 space-y-1 px-2">
-          {conversations.length === 0 && (
+          {!sidebarCollapsed && conversations.length === 0 && (
             <p className="text-xs text-gray-500 px-2 py-4 text-center">会話履歴がありません</p>
           )}
           {conversations.map((conv) => (
@@ -278,19 +295,26 @@ export default function ChatPage() {
               key={conv.sessionId}
               className={`group flex items-center gap-2 rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${
                 conv.sessionId === sessionId ? "bg-gray-700" : "hover:bg-gray-800"
-              }`}
+              } ${sidebarCollapsed ? "justify-center" : ""}`}
               onClick={() => switchSession(conv.sessionId)}
+              title={conv.preview}
             >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-200 truncate">{conv.preview}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{new Date(conv.updatedAt).toLocaleDateString("ja-JP")}</p>
-              </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); deleteConversation(conv.sessionId); }}
-                className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all shrink-0"
-              >
-                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-              </button>
+              {sidebarCollapsed ? (
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current text-gray-400 shrink-0"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+              ) : (
+                <>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-200 truncate">{conv.preview}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{new Date(conv.updatedAt).toLocaleDateString("ja-JP")}</p>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteConversation(conv.sessionId); }}
+                    className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-all shrink-0"
+                  >
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                  </button>
+                </>
+              )}
             </div>
           ))}
         </div>
